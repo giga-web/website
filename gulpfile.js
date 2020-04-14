@@ -18,13 +18,22 @@ var address = require('address');
 /* 自动前缀 */
 var autoprefixer = require('autoprefixer');
 
+/* 端口 */
+var port = 3000;
+
+/* 域名 */
+var host = address.ip();
+
+/* 公共路径 */
+var publicPath = '';
+
 /* 启动服务器 */
 browserSync.init({
   server: {
     baseDir: "build"
   },
-  port: 3000,
-  host: address.ip(),
+  port: port,
+  host: host,
   open: 'external', // https://browsersync.io/docs/options#option-open
 });
 
@@ -33,14 +42,15 @@ function clean() {
   return del('build/**', {force:true});
 }
 
-/* 处理 index */
-function index() {
+/* 处理 indexhtml */
+function indexhtml() {
   var html = gulp.src('src/index.html')
     .pipe(fileinclude({
       prefix: '@@',
       basepath: '@root',
       context: {
-        version: '?='+ new Date().getTime()
+        version: '?='+ new Date().getTime(),
+        publicPath: publicPath,
       },
       indent: true
     }))
@@ -56,13 +66,27 @@ function html() {
       prefix: '@@',
       basepath: '@root',
       context: {
-        version: '?='+ new Date().getTime()
+        version: '?='+ new Date().getTime(),
+        publicPath: publicPath,
       },
       indent: true
     }))
     .pipe(gulp.dest('build/pages/'));
 
   return html;
+}
+
+/* 处理 indexcss */
+function indexcss() {
+  var processors = [
+    autoprefixer(),
+    cssnano
+  ];
+
+  return gulp.src("src/cdn/css/*.scss")
+    .pipe(sass().on('error', sass.logError))
+    .pipe(postcss(processors))
+    .pipe(gulp.dest("build/cdn/css/"));
 }
 
 /* 处理 css */
@@ -75,20 +99,27 @@ function css() {
   return gulp.src("src/cdn/css/**/*.scss")
     .pipe(sass().on('error', sass.logError))
     .pipe(postcss(processors))
-    .pipe(gulp.dest("build/cdn/"));
+    .pipe(gulp.dest("build/cdn/css/"));
+}
+
+/* 处理 indexjs */
+function indexjs() {
+  return gulp.src("src/cdn/javascript/*.js", { sourcemaps: true })
+    // .pipe(uglify())
+    .pipe(gulp.dest("build/cdn/javascript/", { sourcemaps: '.' }));
 }
 
 /* 处理 js */
 function js() {
   return gulp.src("src/cdn/javascript/**/*.js", { sourcemaps: true })
     // .pipe(uglify())
-    .pipe(gulp.dest("build/cdn/", { sourcemaps: '.' }));
+    .pipe(gulp.dest("build/cdn/javascript/", { sourcemaps: '.' }));
 }
 
 /* 处理 asserts */
 function asserts() {
-  return gulp.src("src/asserts/**")
-    .pipe(gulp.dest("build/asserts/"))
+  return gulp.src("src/cdn/asserts/**")
+    .pipe(gulp.dest("build/cdn/asserts/"))
 }
 
 /* 处理 media */
@@ -99,22 +130,29 @@ function media() {
 
 /* 处理 js 库 */
 function libs() {
-  return gulp.src("src/cdn/libs/**")
-    .pipe(gulp.dest("build/cdn/libs/"))
+  return gulp.src("libs/**")
+    .pipe(gulp.dest("build/libs/"))
 }
 
 /* 监听文件变化，重载服务 */
 function server(argument) {
-  gulp.watch("src/index.html", index);
-  gulp.watch("src/pages/*.html", html);
+  gulp.watch(["src/fragments/*.html", "src/index.html"], indexhtml);
+  gulp.watch(["src/fragments/*.html", "src/pages/*.html"], html);
+
+  gulp.watch("src/cdn/css/*.scss", indexcss);
   gulp.watch("src/cdn/css/**/*.scss", css);
+
+  gulp.watch("src/cdn/javascript/*.js", indexjs);
   gulp.watch("src/cdn/javascript/**/*.js", js);
-  gulp.watch("src/asserts/**", asserts);
+
+  gulp.watch("src/cdn/asserts/**", asserts);
+
   gulp.watch("src/cdn/media/**", media);
-  gulp.watch("src/cdn/libs/**", libs);
+
+  gulp.watch("libs/**", libs);
 
   gulp.watch("build").on('change', browserSync.reload);
 }
 
 /* 启动处理序列 */
-exports.default = gulp.series(clean, index, html, css, js, asserts, media, libs, server);
+exports.default = gulp.series(clean, indexhtml, html, indexcss, css, indexjs, js, asserts, media, libs, server);
