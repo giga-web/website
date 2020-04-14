@@ -1,0 +1,25 @@
+{
+  "name": "website",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "gulp"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "address": "^1.1.2",
+    "autoprefixer": "^9.5.0",
+    "browser-sync": "^2.26.3",
+    "cssnano": "^4.1.10",
+    "del": "^4.0.0",
+    "gulp": "^4.0.0",
+    "gulp-file-include": "^2.0.1",
+    "gulp-postcss": "^8.0.0",
+    "gulp-sass": "^4.0.2",
+    "gulp-uglify": "^3.0.2",
+    "node-sass": "^4.13.1"
+  }
+}
